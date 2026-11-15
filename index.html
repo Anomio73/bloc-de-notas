@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notas - App Móvil</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de Tailwind para modo oscuro por clase y fuente Inter -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons para iconografía limpia tipo iOS/Android -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Ocultar barras de desplazamiento manteniendo funcionalidad táctil */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Evitar el rebote elástico en iOS fuera de contenedores con scroll */
+        body {
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans antialiased selection:bg-amber-200 dark:selection:bg-amber-800 transition-colors duration-200">
+
+    <!-- Contenedor principal estilo dispositivo móvil centrado en pantallas grandes -->
+    <div id="app" class="max-w-md mx-auto min-h-screen bg-white dark:bg-zinc-900 shadow-2xl relative flex flex-col overflow-hidden border-x border-gray-200/60 dark:border-zinc-800/60">
+        
+        <!-- ================= VISTA 1: LISTA DE NOTAS ================= -->
+        <div id="list-view" class="flex-1 flex flex-col h-screen">
+            
+            <!-- Cabecera fija superior -->
+            <header class="pt-6 pb-3 px-5 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100 dark:border-zinc-800/80">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Mis Notas</h1>
+                        <p id="notes-count" class="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">0 notas guardadas</p>
+                    </div>
+                    <!-- Botón Modo Oscuro/Claro -->
+                    <button id="theme-toggle" aria-label="Cambiar tema" class="p-2.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 active:scale-95 transition">
+                        <i id="theme-icon" class="ph ph-moon text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Buscador rápido -->
+                <div class="relative">
+                    <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-lg"></i>
+                    <input type="text" id="search-input" placeholder="Buscar notas..." 
+                           class="w-full pl-10 pr-9 py-2.5 bg-gray-100 dark:bg-zinc-800/90 text-sm rounded-2xl border border-transparent focus:border-amber-400 dark:focus:border-amber-500 focus:bg-white dark:focus:bg-zinc-800 focus:outline-none transition-all placeholder-gray-400 dark:placeholder-zinc-500">
+                    <button id="clear-search" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 p-1">
+                        <i class="ph-fill ph-x-circle text-base"></i>
+                    </button>
+                </div>
+
+                <!-- Filtro rápido por color -->
+                <div id="color-filter-bar" class="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+                    <button data-filter="all" class="filter-chip active px-3 py-1 rounded-full text-xs font-medium bg-gray-900 text-white dark:bg-white dark:text-zinc-900 transition shrink-0">
+                        Todas
+                    </button>
+                    <button data-filter="amber" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-amber-100/70 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40 transition shrink-0 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span> Ideas
+                    </button>
+                    <button data-filter="emerald" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-emerald-100/70 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 transition shrink-0 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Personal
+                    </button>
+                    <button data-filter="sky" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-sky-100/70 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800/40 transition shrink-0 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-sky-400"></span> Trabajo
+                    </button>
+                    <button data-filter="rose" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-rose-100/70 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/40 transition shrink-0 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-400"></span> Urgente
+                    </button>
+                </div>
+            </header>
+
+            <!-- Contenedor de lista de notas con scroll -->
+            <main id="notes-container" class="flex-1 overflow-y-auto p-4 pb-24 space-y-3 no-scrollbar">
+                <!-- Las tarjetas de notas se inyectan aquí dinámicamente -->
+            </main>
+
+            <!-- Estado vacío -->
+            <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center px-8 text-center pb-20">
+                <div class="w-20 h-20 rounded-3xl bg-amber-50 dark:bg-zinc-800/80 flex items-center justify-center mb-4 text-amber-500">
+                    <i class="ph ph-note-pencil text-4xl"></i>
+                </div>
+                <h3 id="empty-title" class="text-lg font-semibold text-gray-800 dark:text-zinc-200">Aún no tienes notas</h3>
+                <p id="empty-subtitle" class="text-sm text-gray-500 dark:text-zinc-400 mt-1 max-w-xs">
+                    Toca el botón <span class="font-bold text-amber-500">+</span> de abajo para escribir tu primera idea, lista o recordatorio.
+                </p>
+            </div>
+
+            <!-- Botón Flotante (FAB) para crear nueva nota -->
+            <button id="fab-new-note" aria-label="Crear nueva nota" 
+                    class="fixed bottom-6 right-6 md:absolute md:bottom-6 md:right-6 w-14 h-14 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-90 text-white shadow-lg shadow-amber-500/30 flex items-center justify-center transition-all duration-200 z-20">
+                <i class="ph-bold ph-plus text-2xl"></i>
+            </button>
+        </div>
+
+        <!-- ================= VISTA 2: EDITOR DE NOTA ================= -->
+        <div id="editor-view" class="hidden fixed inset-0 md:absolute bg-white dark:bg-zinc-900 z-30 flex flex-col h-full transition-transform duration-200">
+            
+            <!-- Barra superior del editor -->
+            <header class="px-4 py-3.5 flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md">
+                <button id="btn-back" class="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium py-1.5 px-2 rounded-xl active:bg-amber-50 dark:active:bg-zinc-800 transition">
+                    <i class="ph-bold ph-caret-left text-xl"></i>
+                    <span>Notas</span>
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <!-- Botón Eliminar Nota (visible solo al editar) -->
+                    <button id="btn-delete-note" aria-label="Eliminar nota" class="hidden p-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 active:scale-95 transition">
+                        <i class="ph ph-trash text-xl"></i>
+                    </button>
+                    <!-- Botón Guardar explícito -->
+                    <button id="btn-save-note" class="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm shadow-sm active:scale-95 transition">
+                        Listo
+                    </button>
+                </div>
+            </header>
+
+            <!-- Selector de etiqueta / color sutil -->
+            <div class="px-5 py-3 flex items-center justify-between border-b border-gray-100/80 dark:border-zinc-800/60 bg-gray-50/50 dark:bg-zinc-900">
+                <span id="editor-date" class="text-xs text-gray-400 dark:text-zinc-500 font-medium">Hoy, 12:00</span>
+                <div class="flex items-center gap-2.5" id="color-picker">
+                    <button type="button" data-color="default" aria-label="Sin color" class="color-dot w-6 h-6 rounded-full bg-gray-200 dark:bg-zinc-700 border-2 border-transparent ring-offset-2 dark:ring-offset-zinc-900 transition-all"></button>
+                    <button type="button" data-color="amber" aria-label="Color Ideas" class="color-dot w-6 h-6 rounded-full bg-amber-400 border-2 border-transparent ring-offset-2 dark:ring-offset-zinc-900 transition-all"></button>
+                    <button type="button" data-color="emerald" aria-label="Color Personal" class="color-dot w-6 h-6 rounded-full bg-emerald-400 border-2 border-transparent ring-offset-2 dark:ring-offset-zinc-900 transition-all"></button>
+                    <button type="button" data-color="sky" aria-label="Color Trabajo" class="color-dot w-6 h-6 rounded-full bg-sky-400 border-2 border-transparent ring-offset-2 dark:ring-offset-zinc-900 transition-all"></button>
+                    <button type="button" data-color="rose" aria-label="Color Urgente" class="color-dot w-6 h-6 rounded-full bg-rose-400 border-2 border-transparent ring-offset-2 dark:ring-offset-zinc-900 transition-all"></button>
+                </div>
+            </div>
+
+            <!-- Campos de texto del editor -->
+            <div class="flex-1 flex flex-col p-5 overflow-y-auto">
+                <input type="text" id="note-title-input" placeholder="Título" 
+                       class="w-full text-2xl font-bold bg-transparent border-none focus:outline-none text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-zinc-600 mb-3">
+                
+                <textarea id="note-body-input" placeholder="Empieza a escribir aquí..." 
+                          class="w-full flex-1 resize-none bg-transparent border-none focus:outline-none text-base leading-relaxed text-gray-700 dark:text-zinc-300 placeholder-gray-300 dark:placeholder-zinc-600"></textarea>
+            </div>
+        </div>
+
+        <!-- ================= MODAL DE CONFIRMACIÓN PERSONALIZADO ================= -->
+        <div id="delete-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 transition-opacity">
+            <div class="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-zinc-800 transform transition-all">
+                <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-500 flex items-center justify-center mb-4">
+                    <i class="ph ph-trash text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">¿Eliminar esta nota?</h3>
+                <p class="text-sm text-gray-500 dark:text-zinc-400 mt-1">Esta acción no se puede deshacer y la nota se borrará de tu dispositivo.</p>
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button id="cancel-delete" class="py-3 px-4 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold text-sm active:scale-95 transition">
+                        Cancelar
+                    </button>
+                    <button id="confirm-delete" class="py-3 px-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 active:scale-95 transition">
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast de notificación sutil -->
+        <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 dark:bg-zinc-100/90 text-white dark:text-zinc-900 text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300">
+            Nota guardada
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * Aplicación Bloc de Notas Móvil
+         * Arquitectura basada en estado local sincronizado con localStorage.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CLAVES DE ALMACENAMIENTO ---
+            const STORAGE_KEY = 'mobile_notes_app_v1';
+            const THEME_KEY = 'mobile_notes_theme';
+
+            // --- ESTADO DE LA APLICACIÓN ---
+            let notes = [];
+            let currentNoteId = null;
+            let selectedColor = 'default';
+            let activeFilter = 'all';
+            let searchQuery = '';
+
+            // --- REFERENCIAS AL DOM ---
+            const listView = document.getElementById('list-view');
+            const editorView = document.getElementById('editor-view');
+            const notesContainer = document.getElementById('notes-container');
+            const emptyState = document.getElementById('empty-state');
+            const emptyTitle = document.getElementById('empty-title');
+            const emptySubtitle = document.getElementById('empty-subtitle');
+            const notesCountEl = document.getElementById('notes-count');
+            
+            const searchInput = document.getElementById('search-input');
+            const clearSearchBtn = document.getElementById('clear-search');
+            const filterChips = document.querySelectorAll('.filter-chip');
+            
+            const fabNewNote = document.getElementById('fab-new-note');
+            const btnBack = document.getElementById('btn-back');
+            const btnSaveNote = document.getElementById('btn-save-note');
+            const btnDeleteNote = document.getElementById('btn-delete-note');
+            
+            const noteTitleInput = document.getElementById('note-title-input');
+            const noteBodyInput = document.getElementById('note-body-input');
+            const editorDateEl = document.getElementById('editor-date');
+            const colorDots = document.querySelectorAll('.color-dot');
+            
+            const deleteModal = document.getElementById('delete-modal');
+            const cancelDeleteBtn = document.getElementById('cancel-delete');
+            const confirmDeleteBtn = document.getElementById('confirm-delete');
+            
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const toastEl = document.getElementById('toast');
+
+            // --- MAPA DE ESTILOS POR COLOR ---
+            const COLOR_STYLES = {
+                default: {
+                    card: 'bg-gray-50/90 dark:bg-zinc-800/60 border-gray-200/70 dark:border-zinc-700/60',
+                    badge: null
+                },
+                amber: {
+                    card: 'bg-amber-50/70 dark:bg-amber-950/25 border-amber-200/80 dark:border-amber-800/40',
+                    badge: { text: 'Ideas', classes: 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300' }
+                },
+                emerald: {
+                    card: 'bg-emerald-50/70 dark:bg-emerald-950/25 border-emerald-200/80 dark:border-emerald-800/40',
+                    badge: { text: 'Personal', classes: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300' }
+                },
+                sky: {
+                    card: 'bg-sky-50/70 dark:bg-sky-950/25 border-sky-200/80 dark:border-sky-800/40',
+                    badge: { text: 'Trabajo', classes: 'bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-300' }
+                },
+                rose: {
+                    card: 'bg-rose-50/70 dark:bg-rose-950/25 border-rose-200/80 dark:border-rose-800/40',
+                    badge: { text: 'Urgente', classes: 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300' }
+                }
+            };
+
+            // --- INICIALIZACIÓN ---
+            function init() {
+                initTheme();
+                loadNotes();
+                renderNotes();
+                bindEvents();
+            }
+
+            // --- GESTIÓN DE TEMA OSCURO/CLARO ---
+            function initTheme() {
+                const savedTheme = localStorage.getItem(THEME_KEY);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                    themeIcon.classList.replace('ph-moon', 'ph-sun');
+                }
+            }
+
+            function toggleTheme() {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+                if (isDark) {
+                    themeIcon.classList.replace('ph-moon', 'ph-sun');
+                } else {
+                    themeIcon.classList.replace('ph-sun', 'ph-moon');
+                }
+            }
+
+            // --- PERSISTENCIA (LOCALSTORAGE) ---
+            function loadNotes() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        notes = JSON.parse(raw);
+                    } else {
+                        // Notas iniciales de bienvenida para mostrar la interfaz
+                        notes = [
+                            {
+                                id: 'welcome-1',
+                                title: 'Bienvenido a tus Notas ✨',
+                                body: 'Toca cualquier nota para editarla o pulsa el botón + para crear una nueva. Tus datos se guardan automáticamente en este navegador.',
+                                color: 'amber',
+                                updatedAt: Date.now()
+                            },
+                            {
+                                id: 'welcome-2',
+                                title: 'Lista de la compra',
+                                body: '• Café en grano\n• Aguacates\n• Pan integral\n• Leche de avena',
+                                color: 'emerald',
+                                updatedAt: Date.now() - 3600000 * 5
+                            }
+                        ];
+                        saveNotesToStorage();
+                    }
+                } catch (e) {
+                    console.error('Error cargando notas:', e);
+                    notes = [];
+                }
+            }
+
+            function saveNotesToStorage() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+                } catch (e) {
+                    showToast('No se pudo guardar en el almacenamiento local');
+                }
+            }
+
+            // --- FORMATEO DE FECHA AMIGABLE ---
+            function formatDate(timestamp) {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const isToday = date.toDateString() === now.toDateString();
+                
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1);
+                const isYesterday = date.toDateString() === yesterday.toDateString();
+
+                const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+                if (isToday) return `Hoy, ${timeStr}`;
+                if (isYesterday) return `Ayer, ${timeStr}`;
+                
+                return date.toLocaleDateString('es-ES', { 
+                    day: 'numeric', 
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            // --- RENDERIZADO DE LISTA ---
+            function renderNotes() {
+                // Ordenar por fecha de última edición (más recientes primero)
+                const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
+
+                // Filtrar por búsqueda y etiqueta de color
+                const filtered = sorted.filter(note => {
+                    const matchesColor = activeFilter === 'all' || note.color === activeFilter;
+                    const q = searchQuery.toLowerCase().trim();
+                    const matchesSearch = !q || 
+                        (note.title && note.title.toLowerCase().includes(q)) || 
+                        (note.body && note.body.toLowerCase().includes(q));
+                    return matchesColor && matchesSearch;
+                });
+
+                // Actualizar contador
+                const total = notes.length;
+                notesCountEl.textContent = `${total} ${total === 1 ? 'nota guardada' : 'notas guardadas'}`;
+
+                notesContainer.innerHTML = '';
+
+                if (filtered.length === 0) {
+                    notesContainer.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    
+                    if (notes.length > 0) {
+                        emptyTitle.textContent = 'Sin resultados';
+                        emptySubtitle.textContent = 'No encontramos notas que coincidan con tu búsqueda o filtro actual.';
+                    } else {
+                        emptyTitle.textContent = 'Aún no tienes notas';
+                        emptySubtitle.innerHTML = 'Toca el botón <span class="font-bold text-amber-500">+</span> de abajo para escribir tu primera idea, lista o recordatorio.';
+                    }
+                    return;
+                }
+
+                notesContainer.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+
+                filtered.forEach(note => {
+                    const style = COLOR_STYLES[note.color] || COLOR_STYLES.default;
+                    const card = document.createElement('article');
+                    card.className = `p-4 rounded-2xl border ${style.card} active:scale-[0.98] transition-all duration-150 cursor-pointer select-none shadow-2xs`;
+                    
+                    const displayTitle = note.title.trim() || 'Nota sin título';
+                    const displayBody = note.body.trim() || 'Sin contenido adicional';
+
+                    const badgeHtml = style.badge 
+                        ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.badge.classes}">${style.badge.text}</span>` 
+                        : '';
+
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between gap-2 mb-1.5">
+                            <h2 class="font-semibold text-base text-gray-900 dark:text-zinc-100 line-clamp-1">${escapeHtml(displayTitle)}</h2>
+                            ${badgeHtml}
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-zinc-400 line-clamp-2 whitespace-pre-line leading-snug mb-3">${escapeHtml(displayBody)}</p>
+                        <div class="flex items-center justify-between text-[11px] text-gray-400 dark:text-zinc-500 font-medium">
+                            <span>${formatDate(note.updatedAt)}</span>
+                            <i class="ph ph-caret-right text-xs opacity-60"></i>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', () => openEditor(note.id));
+                    notesContainer.appendChild(card);
+                });
+            }
+
+            // --- NAVEGACIÓN AL EDITOR ---
+            function openEditor(noteId = null) {
+                currentNoteId = noteId;
+
+                if (noteId) {
+                    const note = notes.find(n => n.id === noteId);
+                    if (!note) return;
+                    noteTitleInput.value = note.title;
+                    noteBodyInput.value = note.body;
+                    setSelectedColor(note.color || 'default');
+                    editorDateEl.textContent = `Editado: ${formatDate(note.updatedAt)}`;
+                    btnDeleteNote.classList.remove('hidden');
+                } else {
+                    noteTitleInput.value = '';
+                    noteBodyInput.value = '';
+                    setSelectedColor('default');
+                    editorDateEl.textContent = formatDate(Date.now());
+                    btnDeleteNote.classList.add('hidden');
+                }
+
+                editorView.classList.remove('hidden');
+                // Enfocar automáticamente al crear una nueva nota
+                if (!noteId) {
+                    setTimeout(() => noteTitleInput.focus(), 100);
+                }
+            }
+
+            function closeEditor(shouldSave = true) {
+                if (shouldSave) {
+                    saveCurrentNote();
+                }
+                editorView.classList.add('hidden');
+                currentNoteId = null;
+                renderNotes();
+            }
+
+            function saveCurrentNote() {
+                const title = noteTitleInput.value.trim();
+                const body = noteBodyInput.value.trim();
+
+                // Si ambos campos están vacíos, no guardar notas en blanco
+                if (!title && !body) {
+                    if (currentNoteId) {
+                        notes = notes.filter(n => n.id !== currentNoteId);
+                        saveNotesToStorage();
+                    }
+                    return;
+                }
+
+                const now = Date.now();
+
+                if (currentNoteId) {
+                    const index = notes.findIndex(n => n.id === currentNoteId);
+                    if (index !== -1) {
+                        const existing = notes[index];
+                        // Solo actualizar timestamp si hubo cambios reales
+                        const changed = existing.title !== title || existing.body !== body || existing.color !== selectedColor;
+                        notes[index] = {
+                            ...existing,
+                            title,
+                            body,
+                            color: selectedColor,
+                            updatedAt: changed ? now : existing.updatedAt
+                        };
+                        if (changed) showToast('Nota actualizada');
+                    }
+                } else {
+                    const newNote = {
+                        id: 'note_' + now + '_' + Math.random().toString(36).substring(2, 7),
+                        title,
+                        body,
+                        color: selectedColor,
+                        updatedAt: now
+                    };
+                    notes.unshift(newNote);
+                    showToast('Nota guardada');
+                }
+
+                saveNotesToStorage();
+            }
+
+            // --- SELECTOR DE COLOR ---
+            function setSelectedColor(color) {
+                selectedColor = color;
+                colorDots.forEach(dot => {
+                    if (dot.dataset.color === color) {
+                        dot.classList.add('ring-2', 'ring-gray-800', 'dark:ring-white', 'scale-110');
+                    } else {
+                        dot.classList.remove('ring-2', 'ring-gray-800', 'dark:ring-white', 'scale-110');
+                    }
+                });
+            }
+
+            // --- ELIMINACIÓN DE NOTAS ---
+            function requestDelete() {
+                if (!currentNoteId) return;
+                deleteModal.classList.remove('hidden');
+            }
+
+            function confirmDelete() {
+                if (currentNoteId) {
+                    notes = notes.filter(n => n.id !== currentNoteId);
+                    saveNotesToStorage();
+                    showToast('Nota eliminada');
+                }
+                deleteModal.classList.add('hidden');
+                closeEditor(false);
+            }
+
+            // --- UTILIDADES ---
+            function showToast(message) {
+                toastEl.textContent = message;
+                toastEl.classList.remove('opacity-0');
+                setTimeout(() => {
+                    toastEl.classList.add('opacity-0');
+                }, 2000);
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // --- EVENTOS ---
+            function bindEvents() {
+                themeToggle.addEventListener('click', toggleTheme);
+
+                // Búsqueda
+                searchInput.addEventListener('input', (e) => {
+                    searchQuery = e.target.value;
+                    clearSearchBtn.classList.toggle('hidden', !searchQuery);
+                    renderNotes();
+                });
+
+                clearSearchBtn.addEventListener('click', () => {
+                    searchQuery = '';
+                    searchInput.value = '';
+                    clearSearchBtn.classList.add('hidden');
+                    renderNotes();
+                });
+
+                // Filtros de color
+                filterChips.forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        activeFilter = chip.dataset.filter;
+                        filterChips.forEach(c => {
+                            if (c === chip) {
+                                c.classList.add('ring-2', 'ring-amber-500');
+                            } else {
+                                c.classList.remove('ring-2', 'ring-amber-500');
+                            }
+                        });
+                        renderNotes();
+                    });
+                });
+
+                // Navegación y acciones del editor
+                fabNewNote.addEventListener('click', () => openEditor(null));
+                btnBack.addEventListener('click', () => closeEditor(true));
+                btnSaveNote.addEventListener('click', () => closeEditor(true));
+
+                colorDots.forEach(dot => {
+                    dot.addEventListener('click', () => setSelectedColor(dot.dataset.color));
+                });
+
+                // Modal de eliminación
+                btnDeleteNote.addEventListener('click', requestDelete);
+                cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
+                confirmDeleteBtn.addEventListener('click', confirmDelete);
+            }
+
+            // Arrancar la app
+            init();
+        });
+    </script>
+</body>
+</html>
