@@ -4,9 +4,9 @@
   "display": "standalone",
   "name": "Bloc de Notas",
   "orientation": "any",
-  "scope": "/",
+  "scope": "/bloc-de-notas/",
   "short_name": "notas",
-  "start_url": "/",
+  "start_url": "/bloc-de-notas/",
   "theme_color": "#ffffff",
   "description": "Mi bloc de notas personal",
   "icons": [
